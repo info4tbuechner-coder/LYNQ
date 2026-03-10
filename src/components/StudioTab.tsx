@@ -11,6 +11,11 @@ const MARKET_ITEMS = [
 export const StudioTab = ({ lyqBalance, inventory, handleBuyItem, handleSellItem }: any) => {
   const [subTab, setSubTab] = useState('market'); // 'market' | 'inventory'
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+  const [sortBy, setSortBy] = useState('default');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
 
   useEffect(() => {
     if (toast) {
@@ -29,6 +34,42 @@ export const StudioTab = ({ lyqBalance, inventory, handleBuyItem, handleSellItem
     setToast({ message: result.message, type: result.success ? 'success' : 'error' });
   };
 
+  const rarityScore = (tags: string[]) => {
+    if (tags.includes('Elite')) return 4;
+    if (tags.includes('Epic')) return 3;
+    if (tags.includes('Rare')) return 2;
+    if (tags.includes('Utility')) return 1;
+    return 0;
+  };
+
+  const filteredAndSortedItems = [...MARKET_ITEMS].filter(item => {
+    const query = searchQuery.toLowerCase();
+    const matchesQuery = !query || 
+      item.title.toLowerCase().includes(query) || 
+      item.tags.some(tag => tag.toLowerCase().includes(query));
+    
+    const min = minPrice ? parseFloat(minPrice) : 0;
+    const max = maxPrice ? parseFloat(maxPrice) : Infinity;
+    const matchesPrice = item.price >= min && item.price <= max;
+
+    return matchesQuery && matchesPrice;
+  }).sort((a, b) => {
+    if (sortBy === 'price-asc') return a.price - b.price;
+    if (sortBy === 'price-desc') return b.price - a.price;
+    if (sortBy === 'rarity-desc') return rarityScore(b.tags) - rarityScore(a.tags);
+    return 0;
+  });
+
+  const getTagColor = (tag: string) => {
+    switch (tag) {
+      case 'Elite': return 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
+      case 'Epic': return 'bg-purple-500/20 text-purple-400 border border-purple-500/30';
+      case 'Rare': return 'bg-pink-500/20 text-pink-400 border border-pink-500/30';
+      case 'Utility': return 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
+      default: return 'bg-white/5 text-slate-400 border border-white/10';
+    }
+  };
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
       {/* Toast Notification */}
@@ -44,10 +85,51 @@ export const StudioTab = ({ lyqBalance, inventory, handleBuyItem, handleSellItem
           <h2 className="text-3xl font-black italic uppercase text-white mb-2 leading-none text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-500">Marketplace</h2>
           <p className="text-slate-500 text-sm">Buy, sell & trade digital assets.</p>
         </div>
-        <button className="p-3 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 text-indigo-400">
+        <button 
+          onClick={() => setIsSearchOpen(!isSearchOpen)}
+          className={`p-3 rounded-2xl border transition-all ${isSearchOpen ? 'bg-indigo-500 text-white border-indigo-500' : 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400'}`}>
           <Search size={20} />
         </button>
       </section>
+
+      {isSearchOpen && (
+        <div className="mb-8 bg-[#191C2B] p-4 rounded-2xl border border-white/5 animate-in fade-in slide-in-from-top-2">
+          <div className="flex flex-col gap-4">
+            <div>
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 block">Search Title or Tag</label>
+              <input 
+                type="text" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="e.g. Neon, Epic..."
+                className="w-full bg-[#0F111A] border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
+              />
+            </div>
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 block">Min Price (LYQ)</label>
+                <input 
+                  type="number" 
+                  value={minPrice}
+                  onChange={(e) => setMinPrice(e.target.value)}
+                  placeholder="0"
+                  className="w-full bg-[#0F111A] border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 block">Max Price (LYQ)</label>
+                <input 
+                  type="number" 
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(e.target.value)}
+                  placeholder="Max"
+                  className="w-full bg-[#0F111A] border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-2 mb-8 bg-[#191C2B] p-1.5 rounded-2xl border border-white/5">
         <button 
@@ -81,43 +163,63 @@ export const StudioTab = ({ lyqBalance, inventory, handleBuyItem, handleSellItem
             </div>
           </div>
 
-          <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-6 italic">Exklusive Drops</h3>
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 italic">Exklusive Drops</h3>
+            <select 
+              value={sortBy} 
+              onChange={(e) => setSortBy(e.target.value)}
+              className="bg-[#191C2B] border border-white/10 rounded-xl px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
+            >
+              <option value="default">Sort: Default</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+              <option value="rarity-desc">Rarity: High to Low</option>
+            </select>
+          </div>
           <div className="grid grid-cols-1 gap-6">
-            {MARKET_ITEMS.map((item) => {
-              const isOwned = inventory.some((i: any) => i.id === item.id);
-              const canAfford = lyqBalance >= item.price;
-              
-              return (
-                <div key={item.id} className="group bg-[#191C2B]/40 border border-white/5 rounded-[2.5rem] overflow-hidden flex flex-col md:flex-row hover:border-white/10 transition-all">
-                  <div className={`w-full md:w-32 h-32 ${item.img} group-hover:scale-105 transition-transform duration-700`}></div>
-                  <div className="p-6 flex-1 flex flex-col justify-between">
-                    <div>
-                      <div className="flex gap-2 mb-2">
-                        {item.tags.map(tag => (
-                          <span key={tag} className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 bg-white/5 rounded-md text-slate-400">{tag}</span>
-                        ))}
+            {filteredAndSortedItems.length === 0 ? (
+              <div className="text-center py-12 bg-[#191C2B]/40 border border-white/5 rounded-[2.5rem]">
+                <Search size={48} className="mx-auto text-slate-600 mb-4" />
+                <p className="text-slate-400 font-bold">No items found.</p>
+                <p className="text-slate-500 text-xs mt-2">Try adjusting your search criteria.</p>
+              </div>
+            ) : (
+              filteredAndSortedItems.map((item) => {
+                const isOwned = inventory.some((i: any) => i.id === item.id);
+                const canAfford = lyqBalance >= item.price;
+                
+                return (
+                  <div key={item.id} className="group bg-[#191C2B]/40 border border-white/5 rounded-[2.5rem] overflow-hidden flex flex-col md:flex-row hover:border-white/10 transition-all">
+                    <div className={`w-full md:w-32 h-32 ${item.img} group-hover:scale-105 transition-transform duration-700`}></div>
+                    <div className="p-6 flex-1 flex flex-col justify-between">
+                      <div>
+                        <div className="flex gap-2 mb-2">
+                          {item.tags.map(tag => (
+                            <span key={tag} className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${getTagColor(tag)}`}>{tag}</span>
+                          ))}
+                        </div>
+                        <h4 className="text-white font-black italic uppercase text-base">{item.title}</h4>
                       </div>
-                      <h4 className="text-white font-black italic uppercase text-base">{item.title}</h4>
-                    </div>
-                    <div className="flex justify-between items-center mt-4">
-                      <span className="text-indigo-400 font-black italic text-sm uppercase">{item.price.toLocaleString('de-DE')} LYQ</span>
-                      {isOwned ? (
-                        <button disabled className="px-4 py-2 bg-emerald-500/10 text-emerald-500 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest">
-                          <CheckCircle2 size={14} /> Owned
-                        </button>
-                      ) : (
-                        <button 
-                          onClick={() => onBuy(item)}
-                          className={`px-4 py-2 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all ${canAfford ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-500/20' : 'bg-white/5 text-slate-500 hover:bg-white/10'}`}
-                        >
-                          <ShoppingBag size={14} /> Buy
-                        </button>
-                      )}
+                      <div className="flex justify-between items-center mt-4">
+                        <span className="text-indigo-400 font-black italic text-sm uppercase">{item.price.toLocaleString('de-DE')} LYQ</span>
+                        {isOwned ? (
+                          <button disabled className="px-4 py-2 bg-emerald-500/10 text-emerald-500 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest">
+                            <CheckCircle2 size={14} /> Owned
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => onBuy(item)}
+                            className={`px-4 py-2 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all ${canAfford ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-500/20' : 'bg-white/5 text-slate-500 hover:bg-white/10'}`}
+                          >
+                            <ShoppingBag size={14} /> Buy
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </>
       )}
@@ -140,7 +242,7 @@ export const StudioTab = ({ lyqBalance, inventory, handleBuyItem, handleSellItem
                     <div>
                       <div className="flex gap-2 mb-2">
                         {item.tags.map((tag: string) => (
-                          <span key={tag} className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 bg-white/5 rounded-md text-slate-400">{tag}</span>
+                          <span key={tag} className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${getTagColor(tag)}`}>{tag}</span>
                         ))}
                       </div>
                       <h4 className="text-white font-black italic uppercase text-base">{item.title}</h4>

@@ -10,7 +10,8 @@ import {
   Globe, 
   ShieldCheck, 
   Key, 
-  ChevronRight 
+  ChevronRight,
+  Vote
 } from 'lucide-react';
 
 const communityEvents = [
@@ -22,6 +23,7 @@ const communityEvents = [
 export const HubTab = ({ 
   userProfile, 
   lyqBalance, 
+  stakedLyq,
   isRefreshing, 
   refreshStatus, 
   setIsTransferOpen, 
@@ -66,12 +68,19 @@ export const HubTab = ({
               <RefreshCw size={14} className="text-indigo-100" />
             </button>
           </div>
-          <div className="flex items-baseline gap-3 mb-8">
+          <div className="flex items-baseline gap-3 mb-2">
             <h3 className="text-6xl font-black text-white italic tracking-tighter leading-none">
               {lyqBalance.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
             </h3>
             <span className="text-xl font-bold text-indigo-200 tracking-tighter">LYQ</span>
           </div>
+          
+          <div className="flex items-center gap-2 mb-8 bg-white/10 w-fit px-3 py-1.5 rounded-xl border border-white/10">
+            <Vote size={12} className="text-indigo-200" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-indigo-100">Staked in Governance:</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-white">{stakedLyq.toLocaleString('de-DE', { minimumFractionDigits: 2 })} LYQ</span>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <button onClick={() => setIsTransferOpen(true)} className="bg-white text-indigo-700 font-black py-4 rounded-2xl flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest hover:bg-indigo-50 transition-all active:scale-95 shadow-lg">
               <Send size={16} /> Transfer

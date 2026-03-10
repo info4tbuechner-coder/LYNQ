@@ -29,6 +29,7 @@ const App = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [lyqBalance, setLyqBalance] = useState(1234.56);
+  const [stakedLyq, setStakedLyq] = useState(500.00);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [voted, setVoted] = useState(false);
 
@@ -141,7 +142,7 @@ const App = () => {
   const renderContent = () => {
     switch(activeTab) {
       case 'hub':
-        return <HubTab userProfile={userProfile} lyqBalance={lyqBalance} isRefreshing={isRefreshing} refreshStatus={refreshStatus} setIsTransferOpen={setIsTransferOpen} setIsLobbyOpen={setIsLobbyOpen} />;
+        return <HubTab userProfile={userProfile} lyqBalance={lyqBalance} stakedLyq={stakedLyq} isRefreshing={isRefreshing} refreshStatus={refreshStatus} setIsTransferOpen={setIsTransferOpen} setIsLobbyOpen={setIsLobbyOpen} />;
       case 'explore':
         return <ExploreTab voted={voted} handleVote={handleVote} />;
       case 'studio':
