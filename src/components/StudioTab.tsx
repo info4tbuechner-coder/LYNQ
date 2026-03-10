@@ -70,6 +70,167 @@ const TagList = ({ tags }: { tags: string[] }) => (
   </div>
 );
 
+const ItemCard = ({ item, isOwned, canAfford, onBuy, onSell, onClick, mode }: any) => (
+  <div 
+    onClick={() => onClick(item)}
+    className={`group relative bg-[#191C2B]/40 border border-white/5 rounded-[2.5rem] overflow-hidden flex flex-col md:flex-row hover:border-white/10 transition-all cursor-pointer`}
+  >
+    {mode === 'inventory' && (
+      <div className="absolute top-4 right-4 z-10 bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 text-emerald-400 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest flex items-center gap-1">
+        <CheckCircle2 size={10} /> Owned Asset
+      </div>
+    )}
+    <div className={`w-full md:w-32 h-32 ${item.img} group-hover:scale-105 transition-transform duration-700`}></div>
+    <div className="p-6 flex-1 flex flex-col justify-between">
+      <div>
+        <div className="mb-2"><TagList tags={item.tags} /></div>
+        <h4 className="text-white font-black italic uppercase text-base">{item.title}</h4>
+      </div>
+      <div className="flex justify-between items-center mt-4">
+        {mode === 'market' ? (
+          <>
+            <span className="text-indigo-400 font-black italic text-sm uppercase">{item.price.toLocaleString('de-DE')} LYQ</span>
+            {isOwned ? (
+              <button 
+                disabled 
+                onClick={(e) => e.stopPropagation()}
+                className="px-4 py-2 bg-emerald-500/10 text-emerald-500 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
+              >
+                <CheckCircle2 size={14} /> Owned
+              </button>
+            ) : (
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onBuy(item);
+                }}
+                className={`px-4 py-2 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all ${canAfford ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-500/20' : 'bg-white/5 text-slate-500 hover:bg-white/10'}`}
+              >
+                <ShoppingBag size={14} /> Buy
+              </button>
+            )}
+          </>
+        ) : (
+          <>
+            <span className="text-slate-500 font-black italic text-xs uppercase">Est. Value: {(item.price * 0.8).toLocaleString('de-DE')} LYQ</span>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onSell(item);
+              }}
+              className="px-4 py-2 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all"
+            >
+              <RefreshCw size={14} /> Sell
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  </div>
+);
+
+const NftCard = ({ item, index, onClick }: any) => (
+  <div 
+    onClick={() => onClick(item)}
+    className="group bg-[#191C2B] border border-white/10 rounded-3xl overflow-hidden hover:border-indigo-500/50 transition-all shadow-xl cursor-pointer"
+  >
+    <div className="relative overflow-hidden">
+      <div className={`w-full aspect-square ${item.img} group-hover:scale-110 transition-transform duration-700`}></div>
+      <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10 text-[8px] font-black text-white tracking-widest">
+        #{Math.abs(item.id.charCodeAt(0) * 123 + index * 999).toString().padStart(4, '0')}
+      </div>
+      <div className="absolute bottom-3 left-3 bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 text-emerald-400 px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest flex items-center gap-1">
+        <CheckCircle2 size={10} /> Owned
+      </div>
+    </div>
+    <div className="p-4">
+      <h4 className="text-white font-black italic uppercase text-sm truncate">{item.title}</h4>
+      <div className="mt-2"><TagList tags={item.tags} /></div>
+    </div>
+  </div>
+);
+
+const ItemDetailsModal = ({ item, onClose, inventory, lyqBalance, onBuy, onSell }: any) => {
+  if (!item) return null;
+  const isOwned = inventory.some((i: any) => i.id === item.id);
+  const canAfford = lyqBalance >= item.price;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-[#191C2B] border border-white/10 rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className={`w-full h-48 ${item.img} relative`}>
+          <button 
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 backdrop-blur-md rounded-full text-white transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        
+        <div className="p-6">
+          <div className="mb-3"><TagList tags={item.tags} /></div>
+          
+          <h3 className="text-2xl font-black italic uppercase text-white mb-2">{item.title}</h3>
+          <p className="text-slate-400 text-sm mb-6 leading-relaxed">{item.description}</p>
+          
+          {item.stats && (
+            <div className="mb-6">
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-3">Stats</h4>
+              <div className="grid grid-cols-2 gap-3">
+                {Object.entries(item.stats).map(([key, value]) => (
+                  <div key={key} className="bg-white/5 rounded-xl p-3 border border-white/5">
+                    <div className="text-[10px] font-bold uppercase text-slate-500 mb-1">{key}</div>
+                    <div className="text-indigo-400 font-black">{value as React.ReactNode}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {item.properties && (
+            <div className="mb-6">
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-3">Properties</h4>
+              <div className="flex flex-wrap gap-2">
+                {item.properties.map((prop: string) => (
+                  <span key={prop} className="text-xs font-bold text-slate-300 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
+                    {prop}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          <div className="flex justify-between items-center pt-4 border-t border-white/10">
+            <span className="text-indigo-400 font-black italic text-lg uppercase">{item.price.toLocaleString('de-DE')} LYQ</span>
+            {isOwned ? (
+              <button 
+                onClick={() => {
+                  onSell(item);
+                  onClose();
+                }}
+                className="px-6 py-3 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl flex items-center gap-2 text-xs font-black uppercase tracking-widest transition-all"
+              >
+                <RefreshCw size={16} /> Sell Item
+              </button>
+            ) : (
+              <button 
+                onClick={() => {
+                  onBuy(item);
+                  onClose();
+                }}
+                disabled={!canAfford}
+                className={`px-6 py-3 rounded-xl flex items-center gap-2 text-xs font-black uppercase tracking-widest transition-all ${canAfford ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-500/20' : 'bg-white/5 text-slate-500 cursor-not-allowed'}`}
+              >
+                <ShoppingBag size={16} /> Buy Item
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const StudioTab = ({ lyqBalance, inventory, handleBuyItem, handleSellItem }: any) => {
   const [subTab, setSubTab] = useState('market'); // 'market' | 'inventory' | 'nfts'
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
@@ -232,48 +393,17 @@ export const StudioTab = ({ lyqBalance, inventory, handleBuyItem, handleSellItem
             {filteredAndSortedItems.length === 0 ? (
               renderEmptyState(<Search size={48} />, "No items found.", "Try adjusting your search criteria.")
             ) : (
-              filteredAndSortedItems.map((item) => {
-                const isOwned = inventory.some((i: any) => i.id === item.id);
-                const canAfford = lyqBalance >= item.price;
-                
-                return (
-                  <div 
-                    key={item.id} 
-                    onClick={() => setSelectedItem(item)}
-                    className="group bg-[#191C2B]/40 border border-white/5 rounded-[2.5rem] overflow-hidden flex flex-col md:flex-row hover:border-white/10 transition-all cursor-pointer"
-                  >
-                    <div className={`w-full md:w-32 h-32 ${item.img} group-hover:scale-105 transition-transform duration-700`}></div>
-                    <div className="p-6 flex-1 flex flex-col justify-between">
-                      <div>
-                        <div className="mb-2"><TagList tags={item.tags} /></div>
-                        <h4 className="text-white font-black italic uppercase text-base">{item.title}</h4>
-                      </div>
-                      <div className="flex justify-between items-center mt-4">
-                        <span className="text-indigo-400 font-black italic text-sm uppercase">{item.price.toLocaleString('de-DE')} LYQ</span>
-                        {isOwned ? (
-                          <button 
-                            disabled 
-                            onClick={(e) => e.stopPropagation()}
-                            className="px-4 py-2 bg-emerald-500/10 text-emerald-500 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
-                          >
-                            <CheckCircle2 size={14} /> Owned
-                          </button>
-                        ) : (
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onBuy(item);
-                            }}
-                            className={`px-4 py-2 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all ${canAfford ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-500/20' : 'bg-white/5 text-slate-500 hover:bg-white/10'}`}
-                          >
-                            <ShoppingBag size={14} /> Buy
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
+              filteredAndSortedItems.map((item) => (
+                <ItemCard 
+                  key={item.id} 
+                  item={item} 
+                  isOwned={inventory.some((i: any) => i.id === item.id)} 
+                  canAfford={lyqBalance >= item.price} 
+                  onBuy={onBuy} 
+                  onClick={setSelectedItem} 
+                  mode="market" 
+                />
+              ))
             )}
           </div>
         </>
@@ -287,34 +417,13 @@ export const StudioTab = ({ lyqBalance, inventory, handleBuyItem, handleSellItem
           ) : (
             <div className="grid grid-cols-1 gap-6">
               {inventory.map((item: any) => (
-                <div 
+                <ItemCard 
                   key={item.id} 
-                  onClick={() => setSelectedItem(item)}
-                  className="group relative bg-[#191C2B]/40 border border-white/5 rounded-[2.5rem] overflow-hidden flex flex-col md:flex-row hover:border-white/10 transition-all cursor-pointer"
-                >
-                  <div className="absolute top-4 right-4 z-10 bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 text-emerald-400 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest flex items-center gap-1">
-                    <CheckCircle2 size={10} /> Owned Asset
-                  </div>
-                  <div className={`w-full md:w-32 h-32 ${item.img} group-hover:scale-105 transition-transform duration-700`}></div>
-                  <div className="p-6 flex-1 flex flex-col justify-between">
-                    <div>
-                      <div className="mb-2"><TagList tags={item.tags} /></div>
-                      <h4 className="text-white font-black italic uppercase text-base">{item.title}</h4>
-                    </div>
-                    <div className="flex justify-between items-center mt-4">
-                      <span className="text-slate-500 font-black italic text-xs uppercase">Est. Value: {(item.price * 0.8).toLocaleString('de-DE')} LYQ</span>
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSell(item);
-                        }}
-                        className="px-4 py-2 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all"
-                      >
-                        <RefreshCw size={14} /> Sell
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                  item={item} 
+                  onSell={onSell} 
+                  onClick={setSelectedItem} 
+                  mode="inventory" 
+                />
               ))}
             </div>
           )}
@@ -328,25 +437,12 @@ export const StudioTab = ({ lyqBalance, inventory, handleBuyItem, handleSellItem
           ) : (
             <div className="grid grid-cols-2 gap-4">
               {inventory.map((item: any, index: number) => (
-                <div 
+                <NftCard 
                   key={item.id} 
-                  onClick={() => setSelectedItem(item)}
-                  className="group bg-[#191C2B] border border-white/10 rounded-3xl overflow-hidden hover:border-indigo-500/50 transition-all shadow-xl cursor-pointer"
-                >
-                  <div className="relative overflow-hidden">
-                    <div className={`w-full aspect-square ${item.img} group-hover:scale-110 transition-transform duration-700`}></div>
-                    <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10 text-[8px] font-black text-white tracking-widest">
-                      #{Math.abs(item.id.charCodeAt(0) * 123 + index * 999).toString().padStart(4, '0')}
-                    </div>
-                    <div className="absolute bottom-3 left-3 bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 text-emerald-400 px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest flex items-center gap-1">
-                      <CheckCircle2 size={10} /> Owned
-                    </div>
-                  </div>
-                  <div className="p-4">
-                    <h4 className="text-white font-black italic uppercase text-sm truncate">{item.title}</h4>
-                    <div className="mt-2"><TagList tags={item.tags} /></div>
-                  </div>
-                </div>
+                  item={item} 
+                  index={index} 
+                  onClick={setSelectedItem} 
+                />
               ))}
             </div>
           )}
@@ -354,80 +450,14 @@ export const StudioTab = ({ lyqBalance, inventory, handleBuyItem, handleSellItem
       )}
 
       {/* Item Details Modal */}
-      {selectedItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#191C2B] border border-white/10 rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className={`w-full h-48 ${selectedItem.img} relative`}>
-              <button 
-                onClick={() => setSelectedItem(null)}
-                className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 backdrop-blur-md rounded-full text-white transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            
-            <div className="p-6">
-              <div className="mb-3"><TagList tags={selectedItem.tags} /></div>
-              
-              <h3 className="text-2xl font-black italic uppercase text-white mb-2">{selectedItem.title}</h3>
-              <p className="text-slate-400 text-sm mb-6 leading-relaxed">{selectedItem.description}</p>
-              
-              {selectedItem.stats && (
-                <div className="mb-6">
-                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-3">Stats</h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    {Object.entries(selectedItem.stats).map(([key, value]) => (
-                      <div key={key} className="bg-white/5 rounded-xl p-3 border border-white/5">
-                        <div className="text-[10px] font-bold uppercase text-slate-500 mb-1">{key}</div>
-                        <div className="text-indigo-400 font-black">{value as React.ReactNode}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {selectedItem.properties && (
-                <div className="mb-6">
-                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-3">Properties</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedItem.properties.map((prop: string) => (
-                      <span key={prop} className="text-xs font-bold text-slate-300 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
-                        {prop}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              <div className="flex justify-between items-center pt-4 border-t border-white/10">
-                <span className="text-indigo-400 font-black italic text-lg uppercase">{selectedItem.price.toLocaleString('de-DE')} LYQ</span>
-                {inventory.some((i: any) => i.id === selectedItem.id) ? (
-                  <button 
-                    onClick={() => {
-                      onSell(selectedItem);
-                      setSelectedItem(null);
-                    }}
-                    className="px-6 py-3 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl flex items-center gap-2 text-xs font-black uppercase tracking-widest transition-all"
-                  >
-                    <RefreshCw size={16} /> Sell Item
-                  </button>
-                ) : (
-                  <button 
-                    onClick={() => {
-                      onBuy(selectedItem);
-                      setSelectedItem(null);
-                    }}
-                    disabled={lyqBalance < selectedItem.price}
-                    className={`px-6 py-3 rounded-xl flex items-center gap-2 text-xs font-black uppercase tracking-widest transition-all ${lyqBalance >= selectedItem.price ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-500/20' : 'bg-white/5 text-slate-500 cursor-not-allowed'}`}
-                  >
-                    <ShoppingBag size={16} /> Buy Item
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ItemDetailsModal 
+        item={selectedItem} 
+        onClose={() => setSelectedItem(null)} 
+        inventory={inventory} 
+        lyqBalance={lyqBalance} 
+        onBuy={onBuy} 
+        onSell={onSell} 
+      />
     </div>
   );
 };
