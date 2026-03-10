@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, Cpu, Layers, ShoppingBag, CheckCircle2, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Cpu, Layers, ShoppingBag, CheckCircle2, RefreshCw, AlertCircle } from 'lucide-react';
 
 const MARKET_ITEMS = [
   { id: 'm1', title: 'Neon-V Skin Suite', price: 450, tags: ['Identity', 'Rare'], img: 'bg-gradient-to-tr from-pink-500 to-rose-700' },
@@ -10,9 +10,35 @@ const MARKET_ITEMS = [
 
 export const StudioTab = ({ lyqBalance, inventory, handleBuyItem, handleSellItem }: any) => {
   const [subTab, setSubTab] = useState('market'); // 'market' | 'inventory'
+  const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  const onBuy = (item: any) => {
+    const result = handleBuyItem(item);
+    setToast({ message: result.message, type: result.success ? 'success' : 'error' });
+  };
+
+  const onSell = (item: any) => {
+    const result = handleSellItem(item);
+    setToast({ message: result.message, type: result.success ? 'success' : 'error' });
+  };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl shadow-2xl animate-in slide-in-from-top-4 fade-in duration-300 ${toast.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/20 text-rose-400'}`}>
+          {toast.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+          <span className="text-xs font-bold">{toast.message}</span>
+        </div>
+      )}
+
       <section className="mb-8 flex justify-between items-end">
         <div>
           <h2 className="text-3xl font-black italic uppercase text-white mb-2 leading-none text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-500">Marketplace</h2>
@@ -81,9 +107,8 @@ export const StudioTab = ({ lyqBalance, inventory, handleBuyItem, handleSellItem
                         </button>
                       ) : (
                         <button 
-                          onClick={() => handleBuyItem(item)}
-                          disabled={!canAfford}
-                          className={`px-4 py-2 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all ${canAfford ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-500/20' : 'bg-white/5 text-slate-500 cursor-not-allowed'}`}
+                          onClick={() => onBuy(item)}
+                          className={`px-4 py-2 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all ${canAfford ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-500/20' : 'bg-white/5 text-slate-500 hover:bg-white/10'}`}
                         >
                           <ShoppingBag size={14} /> Buy
                         </button>
@@ -123,7 +148,7 @@ export const StudioTab = ({ lyqBalance, inventory, handleBuyItem, handleSellItem
                     <div className="flex justify-between items-center mt-4">
                       <span className="text-slate-500 font-black italic text-xs uppercase">Est. Value: {(item.price * 0.8).toLocaleString('de-DE')} LYQ</span>
                       <button 
-                        onClick={() => handleSellItem(item)}
+                        onClick={() => onSell(item)}
                         className="px-4 py-2 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all"
                       >
                         <RefreshCw size={14} /> Sell

@@ -62,26 +62,35 @@ const App = () => {
   });
 
   const handleBuyItem = (item: any) => {
-    if (lyqBalance >= item.price && !inventory.find(i => i.id === item.id)) {
-      setLyqBalance(prev => prev - item.price);
-      setInventory(prev => [...prev, item]);
-      setStats(prev => ({
-        ...prev,
-        tradesCompleted: prev.tradesCompleted + 1,
-        lyqSpent: prev.lyqSpent + item.price
-      }));
+    if (inventory.find(i => i.id === item.id)) {
+      return { success: false, message: 'Item already owned.' };
     }
+    if (lyqBalance < item.price) {
+      return { success: false, message: 'Insufficient LYQ balance.' };
+    }
+    
+    setLyqBalance(prev => prev - item.price);
+    setInventory(prev => [...prev, item]);
+    setStats(prev => ({
+      ...prev,
+      tradesCompleted: prev.tradesCompleted + 1,
+      lyqSpent: prev.lyqSpent + item.price
+    }));
+    return { success: true, message: `Successfully purchased ${item.title}.` };
   };
 
   const handleSellItem = (item: any) => {
-    if (inventory.find(i => i.id === item.id)) {
-      setLyqBalance(prev => prev + item.price * 0.8);
-      setInventory(prev => prev.filter(i => i.id !== item.id));
-      setStats(prev => ({
-        ...prev,
-        tradesCompleted: prev.tradesCompleted + 1
-      }));
+    if (!inventory.find(i => i.id === item.id)) {
+      return { success: false, message: 'Item not found in inventory.' };
     }
+    
+    setLyqBalance(prev => prev + item.price * 0.8);
+    setInventory(prev => prev.filter(i => i.id !== item.id));
+    setStats(prev => ({
+      ...prev,
+      tradesCompleted: prev.tradesCompleted + 1
+    }));
+    return { success: true, message: `Successfully sold ${item.title}.` };
   };
 
   useEffect(() => {
