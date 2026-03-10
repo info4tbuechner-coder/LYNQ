@@ -293,8 +293,11 @@ export const StudioTab = ({ lyqBalance, inventory, handleBuyItem, handleSellItem
                 <div 
                   key={item.id} 
                   onClick={() => setSelectedItem(item)}
-                  className="group bg-[#191C2B]/40 border border-white/5 rounded-[2.5rem] overflow-hidden flex flex-col md:flex-row hover:border-white/10 transition-all cursor-pointer"
+                  className="group relative bg-[#191C2B]/40 border border-white/5 rounded-[2.5rem] overflow-hidden flex flex-col md:flex-row hover:border-white/10 transition-all cursor-pointer"
                 >
+                  <div className="absolute top-4 right-4 z-10 bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 text-emerald-400 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest flex items-center gap-1">
+                    <CheckCircle2 size={10} /> Owned Asset
+                  </div>
                   <div className={`w-full md:w-32 h-32 ${item.img} group-hover:scale-105 transition-transform duration-700`}></div>
                   <div className="p-6 flex-1 flex flex-col justify-between">
                     <div>
@@ -345,6 +348,9 @@ export const StudioTab = ({ lyqBalance, inventory, handleBuyItem, handleSellItem
                     <div className={`w-full aspect-square ${item.img} group-hover:scale-110 transition-transform duration-700`}></div>
                     <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10 text-[8px] font-black text-white tracking-widest">
                       #{Math.abs(item.id.charCodeAt(0) * 123 + index * 999).toString().padStart(4, '0')}
+                    </div>
+                    <div className="absolute bottom-3 left-3 bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 text-emerald-400 px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest flex items-center gap-1">
+                      <CheckCircle2 size={10} /> Owned
                     </div>
                   </div>
                   <div className="p-4">
