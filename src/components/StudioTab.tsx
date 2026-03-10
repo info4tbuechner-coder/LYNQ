@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Cpu, Layers, ShoppingBag, CheckCircle2, RefreshCw, AlertCircle, X } from 'lucide-react';
 
 const MARKET_ITEMS = [
@@ -44,8 +44,34 @@ const MARKET_ITEMS = [
   }
 ];
 
+const getTagColor = (tag: string) => {
+  switch (tag) {
+    case 'Elite': return 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
+    case 'Epic': return 'bg-purple-500/20 text-purple-400 border border-purple-500/30';
+    case 'Rare': return 'bg-pink-500/20 text-pink-400 border border-pink-500/30';
+    case 'Utility': return 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
+    default: return 'bg-white/5 text-slate-400 border border-white/10';
+  }
+};
+
+const rarityScore = (tags: string[]) => {
+  if (tags.includes('Elite')) return 4;
+  if (tags.includes('Epic')) return 3;
+  if (tags.includes('Rare')) return 2;
+  if (tags.includes('Utility')) return 1;
+  return 0;
+};
+
+const TagList = ({ tags }: { tags: string[] }) => (
+  <div className="flex gap-1 flex-wrap">
+    {tags.map((tag: string) => (
+      <span key={tag} className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md ${getTagColor(tag)}`}>{tag}</span>
+    ))}
+  </div>
+);
+
 export const StudioTab = ({ lyqBalance, inventory, handleBuyItem, handleSellItem }: any) => {
-  const [subTab, setSubTab] = useState('market'); // 'market' | 'inventory'
+  const [subTab, setSubTab] = useState('market'); // 'market' | 'inventory' | 'nfts'
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [sortBy, setSortBy] = useState('default');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -71,41 +97,33 @@ export const StudioTab = ({ lyqBalance, inventory, handleBuyItem, handleSellItem
     setToast({ message: result.message, type: result.success ? 'success' : 'error' });
   };
 
-  const rarityScore = (tags: string[]) => {
-    if (tags.includes('Elite')) return 4;
-    if (tags.includes('Epic')) return 3;
-    if (tags.includes('Rare')) return 2;
-    if (tags.includes('Utility')) return 1;
-    return 0;
-  };
+  const filteredAndSortedItems = useMemo(() => {
+    return [...MARKET_ITEMS].filter(item => {
+      const query = searchQuery.toLowerCase();
+      const matchesQuery = !query || 
+        item.title.toLowerCase().includes(query) || 
+        item.tags.some(tag => tag.toLowerCase().includes(query));
+      
+      const min = minPrice ? parseFloat(minPrice) : 0;
+      const max = maxPrice ? parseFloat(maxPrice) : Infinity;
+      const matchesPrice = item.price >= min && item.price <= max;
 
-  const filteredAndSortedItems = [...MARKET_ITEMS].filter(item => {
-    const query = searchQuery.toLowerCase();
-    const matchesQuery = !query || 
-      item.title.toLowerCase().includes(query) || 
-      item.tags.some(tag => tag.toLowerCase().includes(query));
-    
-    const min = minPrice ? parseFloat(minPrice) : 0;
-    const max = maxPrice ? parseFloat(maxPrice) : Infinity;
-    const matchesPrice = item.price >= min && item.price <= max;
+      return matchesQuery && matchesPrice;
+    }).sort((a, b) => {
+      if (sortBy === 'price-asc') return a.price - b.price;
+      if (sortBy === 'price-desc') return b.price - a.price;
+      if (sortBy === 'rarity-desc') return rarityScore(b.tags) - rarityScore(a.tags);
+      return 0;
+    });
+  }, [searchQuery, minPrice, maxPrice, sortBy]);
 
-    return matchesQuery && matchesPrice;
-  }).sort((a, b) => {
-    if (sortBy === 'price-asc') return a.price - b.price;
-    if (sortBy === 'price-desc') return b.price - a.price;
-    if (sortBy === 'rarity-desc') return rarityScore(b.tags) - rarityScore(a.tags);
-    return 0;
-  });
-
-  const getTagColor = (tag: string) => {
-    switch (tag) {
-      case 'Elite': return 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
-      case 'Epic': return 'bg-purple-500/20 text-purple-400 border border-purple-500/30';
-      case 'Rare': return 'bg-pink-500/20 text-pink-400 border border-pink-500/30';
-      case 'Utility': return 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
-      default: return 'bg-white/5 text-slate-400 border border-white/10';
-    }
-  };
+  const renderEmptyState = (icon: React.ReactNode, title: string, subtitle: string) => (
+    <div className="text-center py-12 bg-[#191C2B]/40 border border-white/5 rounded-[2.5rem]">
+      <div className="mx-auto text-slate-600 mb-4 flex justify-center">{icon}</div>
+      <p className="text-slate-400 font-bold">{title}</p>
+      <p className="text-slate-500 text-xs mt-2">{subtitle}</p>
+    </div>
+  );
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
@@ -169,24 +187,15 @@ export const StudioTab = ({ lyqBalance, inventory, handleBuyItem, handleSellItem
       )}
 
       <div className="flex gap-2 mb-8 bg-[#191C2B] p-1.5 rounded-2xl border border-white/5">
-        <button 
-          onClick={() => setSubTab('market')}
-          className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${subTab === 'market' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'text-slate-500 hover:text-slate-300'}`}
-        >
-          Store
-        </button>
-        <button 
-          onClick={() => setSubTab('inventory')}
-          className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${subTab === 'inventory' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'text-slate-500 hover:text-slate-300'}`}
-        >
-          My Assets ({inventory.length})
-        </button>
-        <button 
-          onClick={() => setSubTab('nfts')}
-          className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${subTab === 'nfts' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'text-slate-500 hover:text-slate-300'}`}
-        >
-          NFT Gallery
-        </button>
+        {['market', 'inventory', 'nfts'].map((tab) => (
+          <button 
+            key={tab}
+            onClick={() => setSubTab(tab)}
+            className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${subTab === tab ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'text-slate-500 hover:text-slate-300'}`}
+          >
+            {tab === 'market' ? 'Store' : tab === 'inventory' ? `My Assets (${inventory.length})` : 'NFT Gallery'}
+          </button>
+        ))}
       </div>
 
       {subTab === 'market' && (
@@ -221,11 +230,7 @@ export const StudioTab = ({ lyqBalance, inventory, handleBuyItem, handleSellItem
           </div>
           <div className="grid grid-cols-1 gap-6">
             {filteredAndSortedItems.length === 0 ? (
-              <div className="text-center py-12 bg-[#191C2B]/40 border border-white/5 rounded-[2.5rem]">
-                <Search size={48} className="mx-auto text-slate-600 mb-4" />
-                <p className="text-slate-400 font-bold">No items found.</p>
-                <p className="text-slate-500 text-xs mt-2">Try adjusting your search criteria.</p>
-              </div>
+              renderEmptyState(<Search size={48} />, "No items found.", "Try adjusting your search criteria.")
             ) : (
               filteredAndSortedItems.map((item) => {
                 const isOwned = inventory.some((i: any) => i.id === item.id);
@@ -240,11 +245,7 @@ export const StudioTab = ({ lyqBalance, inventory, handleBuyItem, handleSellItem
                     <div className={`w-full md:w-32 h-32 ${item.img} group-hover:scale-105 transition-transform duration-700`}></div>
                     <div className="p-6 flex-1 flex flex-col justify-between">
                       <div>
-                        <div className="flex gap-2 mb-2">
-                          {item.tags.map(tag => (
-                            <span key={tag} className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${getTagColor(tag)}`}>{tag}</span>
-                          ))}
-                        </div>
+                        <div className="mb-2"><TagList tags={item.tags} /></div>
                         <h4 className="text-white font-black italic uppercase text-base">{item.title}</h4>
                       </div>
                       <div className="flex justify-between items-center mt-4">
@@ -282,11 +283,7 @@ export const StudioTab = ({ lyqBalance, inventory, handleBuyItem, handleSellItem
         <>
           <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-6 italic">Your Digital Assets</h3>
           {inventory.length === 0 ? (
-            <div className="text-center py-12 bg-[#191C2B]/40 border border-white/5 rounded-[2.5rem]">
-              <Layers size={48} className="mx-auto text-slate-600 mb-4" />
-              <p className="text-slate-400 font-bold">No assets owned yet.</p>
-              <p className="text-slate-500 text-xs mt-2">Visit the store to acquire items.</p>
-            </div>
+            renderEmptyState(<Layers size={48} />, "No assets owned yet.", "Visit the store to acquire items.")
           ) : (
             <div className="grid grid-cols-1 gap-6">
               {inventory.map((item: any) => (
@@ -301,11 +298,7 @@ export const StudioTab = ({ lyqBalance, inventory, handleBuyItem, handleSellItem
                   <div className={`w-full md:w-32 h-32 ${item.img} group-hover:scale-105 transition-transform duration-700`}></div>
                   <div className="p-6 flex-1 flex flex-col justify-between">
                     <div>
-                      <div className="flex gap-2 mb-2">
-                        {item.tags.map((tag: string) => (
-                          <span key={tag} className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${getTagColor(tag)}`}>{tag}</span>
-                        ))}
-                      </div>
+                      <div className="mb-2"><TagList tags={item.tags} /></div>
                       <h4 className="text-white font-black italic uppercase text-base">{item.title}</h4>
                     </div>
                     <div className="flex justify-between items-center mt-4">
@@ -331,11 +324,7 @@ export const StudioTab = ({ lyqBalance, inventory, handleBuyItem, handleSellItem
         <>
           <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-6 italic">Your NFT Collection</h3>
           {inventory.length === 0 ? (
-            <div className="text-center py-12 bg-[#191C2B]/40 border border-white/5 rounded-[2.5rem]">
-              <Layers size={48} className="mx-auto text-slate-600 mb-4" />
-              <p className="text-slate-400 font-bold">No NFTs owned yet.</p>
-              <p className="text-slate-500 text-xs mt-2">Visit the store to acquire items.</p>
-            </div>
+            renderEmptyState(<Layers size={48} />, "No NFTs owned yet.", "Visit the store to acquire items.")
           ) : (
             <div className="grid grid-cols-2 gap-4">
               {inventory.map((item: any, index: number) => (
@@ -355,11 +344,7 @@ export const StudioTab = ({ lyqBalance, inventory, handleBuyItem, handleSellItem
                   </div>
                   <div className="p-4">
                     <h4 className="text-white font-black italic uppercase text-sm truncate">{item.title}</h4>
-                    <div className="flex gap-1 mt-2 flex-wrap">
-                      {item.tags.map((tag: string) => (
-                        <span key={tag} className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md ${getTagColor(tag)}`}>{tag}</span>
-                      ))}
-                    </div>
+                    <div className="mt-2"><TagList tags={item.tags} /></div>
                   </div>
                 </div>
               ))}
@@ -382,11 +367,7 @@ export const StudioTab = ({ lyqBalance, inventory, handleBuyItem, handleSellItem
             </div>
             
             <div className="p-6">
-              <div className="flex gap-2 mb-3">
-                {selectedItem.tags.map((tag: string) => (
-                  <span key={tag} className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${getTagColor(tag)}`}>{tag}</span>
-                ))}
-              </div>
+              <div className="mb-3"><TagList tags={selectedItem.tags} /></div>
               
               <h3 className="text-2xl font-black italic uppercase text-white mb-2">{selectedItem.title}</h3>
               <p className="text-slate-400 text-sm mb-6 leading-relaxed">{selectedItem.description}</p>
